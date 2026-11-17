@@ -44,15 +44,25 @@ This toolkit extracts the official English localization from a legal PC (Steam) 
 
 ---
 
-## How to Build & Install
+## How to Install
+
+### Option A: Drag-and-Drop `rePatch` Zip — Recommended (No Tools or PC Copy Needed)
+Download **`Gnosia_Vita_English_Patch_v0.1_rePatch.zip`** from the [Releases page](https://github.com/fiksr/gnosia-vita-english-patch/releases).
+
+- **Vita3K (Windows / Android / Linux / macOS / Steam Deck):**
+  1. Install the base Japanese game (`PCSG01277`) in Vita3K.
+  2. Extract `PCSG01277/eboot.bin` and `PCSG01277/game_data/game_data.psarc` into `<Vita3K_ux0>/app/PCSG01277/` (back up originals first).
+- **Real PS Vita (`rePatch`):**
+  1. Ensure the **rePatch** kernel plugin (`rePatch.skprx` / `rePatch_reloaded`) is active.
+  2. Copy the `PCSG01277/` folder into `ux0:rePatch/PCSG01277/`.
+
+### Option B: Build from Source (PC Steam + Vita Dump)
 1. Install Python 3.10+ and dependencies:
    ```bash
    pip install Pillow UnityPy
    ```
 2. Update the input/output paths at the top of `tools/extract_pc_tm.py`, `tools/patch_elf.py`, `tools/unpack_psarc.py`, `tools/port_ui_textures.py`, and `tools/pack_psarc.py` to match your system, or run `Apply_Patch.bat` (Windows) / `./apply_patch.sh` (Linux/macOS).
-3. Copy the generated `eboot.bin` and `game_data.psarc`:
-   - **Vita3K:** `<Vita3K_ux0>/app/PCSG01277/eboot.bin` and `<Vita3K_ux0>/app/PCSG01277/game_data/game_data.psarc` (back up originals first).
-   - **Real PS Vita (`rePatch`):** `ux0:rePatch/PCSG01277/eboot.bin` and `ux0:rePatch/PCSG01277/game_data/game_data.psarc`.
+3. Copy the generated `eboot.bin` and `game_data.psarc` into Vita3K or `ux0:rePatch/PCSG01277/`.
 
 ---
 
