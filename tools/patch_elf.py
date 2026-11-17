@@ -333,7 +333,7 @@ def main():
             unrepointed.append({"vaddr": hex(vaddr), "jp": e["jp"], "en": e["en"], "orig_len": e["orig_len"]})
             continue
         new_vaddr = base_new_vaddr + (len(extra_block) - bss_pad_len - pre_align)
-        addend_map[vaddr - 0x81000000] = new_vaddr - 0x81000000
+        addend_map[vaddr - 0x81000000] = new_vaddr - p1_vaddr
         extra_block.extend(en_b + b"\x00")
         # Align each string to 4 bytes
         while len(extra_block) % 4 != 0:
@@ -364,7 +364,8 @@ def main():
         fmt = w0 & 0xF
         if fmt == 0:
             r_addend = struct.unpack_from("<I", elf, rpos + 4)[0]
-            if r_addend in addend_map:
+            if (w0 & 0xF0) == 0 and r_addend in addend_map:
+                struct.pack_into("<I", elf, rpos, w0 | 0x10)
                 struct.pack_into("<I", elf, rpos + 4, addend_map[r_addend])
                 rela_updated += 1
             rpos += 12
