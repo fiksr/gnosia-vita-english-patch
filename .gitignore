@@ -1,0 +1,20 @@
+# Game binaries, dumps, and generated assets (never commit copyrighted files)
+*.bin
+*.bin.orig
+*.elf
+*.psarc
+*.psarc.orig
+*.assets
+*.bundle
+*.png
+*.ttf
+*.vag
+*.at9
+*.gxp
+*.zip
+__pycache__/
+extracted_vita_psarc/
+pc_ui_raw/
+patched_ui_safe/
+translation_memory.json
+elf_patch_report.json
