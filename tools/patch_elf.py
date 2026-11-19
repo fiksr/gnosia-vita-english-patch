@@ -58,7 +58,7 @@ _CONTRACTIONS = [
 ]
 
 
-def wrap_english(text, width=56, is_dialogue=False):
+def wrap_english(text, width=52, is_dialogue=False):
     def _wrap(t, w):
         out_lines = []
         for line in t.split("\n"):
@@ -200,10 +200,15 @@ def main():
         if en is None:
             entries.append({"off": off, "vaddr": vaddr, "jp": s, "en": None, "orig_len": len(raw)})
         else:
-            if s != base and not en.endswith(suffix):
-                en = wrap_english(en, is_dialogue=True) + suffix
+            # Vita has no PC '{3}' verb-conjugation token; '{1}'/'{2}' are always 3rd-person names
+            en = en.replace("{3}", "is")
+            if 0x76DC60 <= off <= 0x76E800:
+                # Move-screen room descriptions: reflow cleanly to 24 chars/line (widened box: 26x7, font 18)
+                en = wrap_english(en.replace("\n", " "), width=24, is_dialogue=False)
+            elif s != base and not en.endswith(suffix):
+                en = wrap_english(en, width=52, is_dialogue=True) + suffix
             else:
-                en = wrap_english(en, is_dialogue=(s != base))
+                en = wrap_english(en, width=52, is_dialogue=(s != base))
             entries.append({"off": off, "vaddr": vaddr, "jp": s, "en": en, "orig_len": len(raw)})
 
     # 2. Split into in-place vs overflow
@@ -227,6 +232,13 @@ def main():
         orig_len = e["orig_len"]
         elf[off : off + orig_len] = en_b + b"\x00" * (orig_len - len(en_b))
 
+    # Patch standalone Japanese list-joiner '、' -> ', ' and Stella's '?様' honorific -> '?'
+    for comma_off in (0x76D790, 0x7748A0):
+        assert elf[comma_off : comma_off + 4] == "、".encode("utf-8") + b"\x00", f"Unexpected comma at 0x{comma_off:x}"
+        elf[comma_off : comma_off + 4] = b", \x00\x00"
+    assert elf[0x7EDC67 : 0x7EDC6C] == b"?" + "様".encode("utf-8") + b"\x00", "Unexpected ?様 honorific"
+    elf[0x7EDC67 : 0x7EDC6C] = b"?\x00\x00\x00\x00"
+
     # Widen both real dialogue boxes: r2 (max_chars) 31 -> 58 (0x3a), r3 (max_lines) 3 -> 4, [sp] (font_size) 40 -> 25 (0x19)
     box_patches = [
         (0x0546D2, 0x221F, 0x223A, 0x0546D4, 0x2303, 0x2304, 0x0546B6, 0x2328, 0x2319),  # 0x810545f2 / f4 / d6
@@ -234,6 +246,9 @@ def main():
         # Command List right-hand explanation box (Start Menu & Skill Setup): r2 15->25 (0x19), r3 14->18 (0x12), font 24->19 (0x13)
         (0x06C1C2, 0x220F, 0x2219, 0x06C1C6, 0x230E, 0x2312, 0x06C1B0, 0x2018, 0x2013),
         (0x09904C, 0x220F, 0x2219, 0x099050, 0x230E, 0x2312, 0x099032, 0x2018, 0x2013),
+        # Move-screen room description boxes: r2 15->26 (0x1a), r3 4->7 (0x07), font 26->18 (0x12)
+        (0x08D4EC, 0x220F, 0x221A, 0x08D4EE, 0x2304, 0x2307, 0x08D4D4, 0x231A, 0x2312),
+        (0x08FFB0, 0x220F, 0x221A, 0x08FFB2, 0x2304, 0x2307, 0x08FF98, 0x231A, 0x2312),
     ]
     for off_w, exp_w, new_w, off_l, exp_l, new_l, off_f, exp_f, new_f in box_patches:
         assert struct.unpack_from("<H", elf, off_w)[0] == exp_w, f"Unexpected wrap insn at 0x{off_w:x}"
@@ -353,27 +368,28 @@ def main():
 
         repointed_count += 1
 
-    # Update PT_SCE_RELA (PHDR 2) addends properly (fmt=0 is 12 bytes, fmt=1 is 8 bytes)
-    p2_off = struct.unpack_from("<I", elf, 0x34 + 2 * 32 + 4)[0]
-    p2_filesz = struct.unpack_from("<I", elf, 0x34 + 2 * 32 + 16)[0]
+    # Update BOTH PT_SCE_RELA tables (PHDR 2 for .text/.rodata AND PHDR 3 for .data!)
     rela_updated = 0
-    rpos = p2_off
-    r_end = p2_off + p2_filesz
-    while rpos < r_end:
-        w0 = struct.unpack_from("<I", elf, rpos)[0]
-        fmt = w0 & 0xF
-        if fmt == 0:
-            r_addend = struct.unpack_from("<I", elf, rpos + 4)[0]
-            if (w0 & 0xF0) == 0 and r_addend in addend_map:
-                struct.pack_into("<I", elf, rpos, w0 | 0x10)
-                struct.pack_into("<I", elf, rpos + 4, addend_map[r_addend])
-                rela_updated += 1
-            rpos += 12
-        elif fmt == 1:
-            rpos += 8
-        else:
-            raise ValueError(f"Unknown RELA fmt={fmt} at 0x{rpos:x}")
-    print(f"Updated PT_SCE_RELA entries: {rela_updated}")
+    for ph_idx in (2, 3):
+        p_off = struct.unpack_from("<I", elf, 0x34 + ph_idx * 32 + 4)[0]
+        p_filesz = struct.unpack_from("<I", elf, 0x34 + ph_idx * 32 + 16)[0]
+        rpos = p_off
+        r_end = p_off + p_filesz
+        while rpos < r_end:
+            w0 = struct.unpack_from("<I", elf, rpos)[0]
+            fmt = w0 & 0xF
+            if fmt == 0:
+                r_addend = struct.unpack_from("<I", elf, rpos + 4)[0]
+                if (w0 & 0xF0) == 0 and r_addend in addend_map:
+                    struct.pack_into("<I", elf, rpos, w0 | 0x10)
+                    struct.pack_into("<I", elf, rpos + 4, addend_map[r_addend])
+                    rela_updated += 1
+                rpos += 12
+            elif fmt == 1:
+                rpos += 8
+            else:
+                raise ValueError(f"Unknown RELA fmt={fmt} at 0x{rpos:x}")
+    print(f"Updated PT_SCE_RELA entries (PHDR 2 + PHDR 3): {rela_updated}")
 
     # Splice extra_block at end of PHDR 1 (p1_off + p1_filesz)
     insert_pos = p1_off + p1_filesz

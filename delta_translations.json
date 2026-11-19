@@ -100,5 +100,10 @@
   "{0}……なんでだよ？。\nふたり一度に、てのはルール違反だろ？": "{0}...why?\nTwo at once—isn't that against the rules?",
   "制作\nプチデポット\n\n　　　　　製作総指揮　めづかれ（川勝　徹）\nシナリオ・開発　しごと　　　　\n　画像　ことり\nサウンド　Q flavor": "Created by\nPetit Depotto\n\nProducer: Mezukare (Toru Kawakatsu)\nScenario & Dev: Shigoto\nArt: Kotori\nSound: Q flavor",
   "フォント\nしねきゃぷしょん": "Font\nCinecaption",
-  "販売\n株式会社メビウス\n\n喜多村　明夫\n出岡　典子\n国原　博": "Published by\nMebius Co., Ltd.\n\nAkio Kitamura\nNoriko Izuoka\nHiroshi Kunihara"
+  "販売\n株式会社メビウス\n\n喜多村　明夫\n出岡　典子\n国原　博": "Published by\nMebius Co., Ltd.\n\nAkio Kitamura\nNoriko Izuoka\nHiroshi Kunihara",
+  "ＡＣ主義者": "AC Follower",
+  "水質管理室": "Water Management",
+  "『鍵』の機能回復により、ループ開始時に\n自分の役割を選べるようになりました": "Key restored! You can\nnow choose your role.",
+  "『鍵』の機能回復により、ループ開始時に\n人数や役割の有無を選べるようになりました": "Key restored! You can\nnow set crew & roles.",
+  "『鍵』の機能回復により、情報が得やすい\n設定を探知できるようになりました": "Key restored! You can\nnow use Event Search."
 }
